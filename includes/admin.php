@@ -18,6 +18,11 @@ function wevs_admin_page() {
 
         wevs_update_all_vat_rates();
 
+        wp_redirect(admin_url('admin.php?page=wevs&updated=1'));
+        exit;
+    }
+
+    if (isset($_GET['updated'])) {
         echo '<div class="updated"><p>VAT updated.</p></div>';
     }
 
