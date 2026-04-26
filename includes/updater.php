@@ -7,57 +7,60 @@ function wevs_log($message) {
 }
 
 function wevs_update_all_vat_rates() {
-
     $rates = wevs_get_vat_rates();
+
     global $wpdb;
 
     $table = $wpdb->prefix . 'woocommerce_tax_rates';
-
     $updated = 0;
 
     foreach ($rates as $country => $rate) {
+        $existing = $wpdb->get_var($wpdb->prepare(
+            "SELECT tax_rate_id FROM {$table}
+             WHERE tax_rate_country = %s
+             AND tax_rate_name = %s",
+            $country,
+            'VAT'
+        ));
 
-$existing = $wpdb->get_var($wpdb->prepare(
-    "SELECT tax_rate_id FROM $table 
-     WHERE tax_rate_country = %s 
-     AND tax_rate_name = %s",
-    $country,
-    'VAT'
-));
+        if ($existing) {
+            $result = $wpdb->update(
+                $table,
+                ['tax_rate' => $rate],
+                ['tax_rate_id' => $existing],
+                ['%f'],
+                ['%d']
+            );
 
-if ($existing) {
+            if ($result !== false) {
+                $updated++;
+                wevs_log("UPDATED $country → $rate");
+            }
+        } else {
+            $result = $wpdb->insert(
+                $table,
+                [
+                    'tax_rate_country'  => $country,
+                    'tax_rate'          => $rate,
+                    'tax_rate_name'     => 'VAT',
+                    'tax_rate_priority' => 1,
+                    'tax_rate_compound' => 0,
+                    'tax_rate_shipping' => 1,
+                    'tax_rate_order'    => 0,
+                    'tax_rate_class'    => '',
+                ],
+                ['%s', '%f', '%s', '%d', '%d', '%d', '%d', '%s']
+            );
 
-    $wpdb->update(
-        $table,
-        ['tax_rate' => $rate],
-        ['tax_rate_id' => $existing],
-        ['%f'],
-        ['%d']
-    );
-
-    wevs_log("UPDATED $country → $rate");
-
-} else {
-
-    $wpdb->insert(
-        $table,
-        [
-            'tax_rate_country'  => $country,
-            'tax_rate'          => $rate,
-            'tax_rate_name'     => 'VAT',
-            'tax_rate_priority' => 1,
-            'tax_rate_compound' => 0,
-            'tax_rate_shipping' => 1,
-            'tax_rate_order'    => 0,
-            'tax_rate_class'    => '',
-        ]
-    );
-
-    wevs_log("INSERTED $country → $rate");
-}
-
+            if ($result !== false) {
+                $updated++;
+                wevs_log("INSERTED $country → $rate");
+            }
+        }
     }
 
     update_option('wevs_last_run', current_time('mysql'));
     update_option('wevs_last_count', $updated);
+
+    return $updated;
 }
