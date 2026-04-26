@@ -16,3 +16,10 @@ Always verify tax compliance for your business.
 - [ ] Reduced rates
 - [ ] Cron automation
 - [ ] Logging improvements
+
+## Status
+MVP version – manual VAT update working
+
+## Tested with
+- WooCommerce 8+
+- WordPress 6+
